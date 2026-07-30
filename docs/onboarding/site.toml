@@ -1,0 +1,53 @@
+# Written by `docsbuild init`. The two brand strings are a guess from the
+# directory names — edit them.
+
+brand        = "docsbuild · Onboarding"
+title_suffix = "docsbuild Onboarding"
+
+# --- Optional. Uncomment and edit what you need. ---------------------------
+#
+# Prose below never starts a line with a bracket, so uncommenting whole
+# example blocks is safe — only real config lines look like config.
+
+# Sidebar labels: override the name a page gets in the contents list, for
+# when it should read differently there than the page's own `# heading`
+# does. Only the pages you list change; every other page keeps its heading.
+#
+# The cover page's own heading repeats the brand directly above it, so the
+# sidebar says what the page is *for* instead.
+#
+# A heading's text is used verbatim in the sidebar, so backticks in an H1 would show
+# up as literal characters there. `09-init` has them, hence the second override.
+[titles]
+index     = "Overview & contents"
+"09-init" = "The init command"
+
+# One file with everything in it: also write every page into a single file,
+# in reading order, with links between pages becoming in-document anchors so
+# it reads top to bottom. Useful for diffing a whole document in one place,
+# or handing it to a tool in one read. Generated — never edit the result.
+#
+# [concat]
+# output  = "onboarding.md"
+# command = "docsbuild --set onboarding"
+
+# A page outside the reading chain: rendered with an index of its own `##`
+# sections instead of previous/next buttons. Good for a reference or
+# configuration page that is not part of the tour. Add one block per page;
+# a missing source file is skipped rather than failing the build.
+#
+# [[standalone]]
+# source = "../REFERENCE.md"
+# output = "../REFERENCE.html"
+# title  = "Reference"
+
+# Status badges: a declared token at the head of a list item becomes a
+# coloured pill, so a document can mark finished work without deleting it.
+# Opt-in — with no table here, every bracketed word stays plain text. A bare
+# string is the label, and the pill's colour comes from the lowercased token;
+# the table form lets a token borrow another's colour.
+# Styles the bundled stylesheet defines: done, next, later, planned, dropped.
+#
+# [badges]
+# DONE  = "Done"
+# BUILT = { label = "Built", style = "done" }

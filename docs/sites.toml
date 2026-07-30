@@ -1,0 +1,2 @@
+# The doc sets in this project, in the order `--all` builds them.
+sets = ["onboarding"]

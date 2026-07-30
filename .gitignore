@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+dist/
+build/
+*.egg-info/
+
+# Generated documentation. Every `html/` directory is build output, rebuilt on demand
+# from the markdown beside it — including the example project's.
+html/

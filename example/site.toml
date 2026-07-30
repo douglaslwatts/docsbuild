@@ -1,0 +1,20 @@
+# The smallest useful configuration: two brand strings and nothing else.
+#
+# `source` defaults to markdown/, `output` to html/, and the stylesheet to the one
+# bundled with docsbuild. Build it with:
+#
+#     cd example && docsbuild
+#
+# then open html/index.html in a browser. No server, no install step.
+
+brand        = "Example · Guide"
+title_suffix = "Example Guide"
+
+# Status badges are opt-in, so declare the tokens this guide uses. A bare string is the
+# label, and the pill's colour comes from the lowercased token; the table form lets a
+# token borrow another's colour. With this table absent, `[DONE]` would stay plain text.
+[badges]
+DONE  = "Done"
+NEXT  = "Next"
+LATER = "Later"
+BUILT = { label = "Built", style = "done" }
