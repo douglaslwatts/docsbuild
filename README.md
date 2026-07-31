@@ -352,7 +352,8 @@ double-backtick code span the old converter had been mangling for months.
 
 Four steps, in this order:
 
-1. **Read** every discovered markdown file. If one has vanished, stop immediately.
+1. **Read** every discovered markdown file. If one has vanished since it was discovered,
+   stop immediately.
 2. **Convert** them all to HTML, in memory.
 3. **Delete** any `.html` in the output directory with no markdown source left.
 4. **Write** the new pages.
