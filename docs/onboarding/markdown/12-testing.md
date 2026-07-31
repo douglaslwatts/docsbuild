@@ -142,6 +142,38 @@ Three times while building this, the failure was in the test rather than the cod
 
 Worth expecting. A test that fails is evidence about the system *including the test*.
 
+## Where it runs without being asked
+
+Everything above also runs in **continuous integration** — a service that builds and tests a
+project automatically, on GitHub's machines, every time work is pushed. The workflow lives in
+`.github/workflows/ci.yml` and fires on every pull request to `main` and `dev`, and on every
+push to them.
+
+It is two jobs:
+
+- **`test`** runs `uv run pytest` four times over, once each on Python 3.11, 3.12, 3.13 and
+  3.14. Running the same suite across several interpreters is called a **matrix**.
+- **`quality`** runs `ruff check`, `ruff format --check` and `pyright` once.
+
+The matrix is the point. `pyproject.toml` declares `requires-python = ">=3.11"`, which is a
+promise to anyone installing this tool. Locally the suite only ever ran on whichever interpreter
+`uv` picked, so nothing tested the oldest version that promise covers. Now something does, and a
+change that quietly depends on newer syntax fails before it is merged rather than after someone
+installs it.
+
+Two smaller choices worth knowing:
+
+- `uv sync --locked` makes the run **fail** if `uv.lock` is out of date, instead of quietly
+  resolving different package versions from the ones you have locally.
+- `uv run --no-sync` runs against the environment as it already stands. It is the same habit
+  described in [Releasing a version](14-releasing.md), for the same reason: a plain `uv run`
+  would reconcile the environment first and could undo what you just set up.
+
+All five checks — the four interpreters and `quality` — are marked **required** by the branch
+protection rules, so a pull request whose tests fail cannot be merged. Coverage is included
+automatically: the 95 % gate lives in pytest's own `addopts`, so a drop below it fails the run
+without CI needing to know about it.
+
 ---
 
 [← Previous: Configuration reference](11-configuration.md) · [Contents](index.md) ·
