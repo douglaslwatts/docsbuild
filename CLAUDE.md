@@ -99,8 +99,8 @@ Never write implementation code before there is a failing test for it.
 A release is a **git tag** — there is no package index. Tags are v-prefixed semver (`v0.1.0`)
 and always match `version` in `pyproject.toml`. Cutting one and consuming one are documented in
 `docs/onboarding/markdown/14-releasing.md`; that page is the source of truth for the workflow,
-including private-repo access and why `uv run --no-sync` is mandatory when testing local
-changes against a consuming project.
+including why `uv run --no-sync` is mandatory when testing local changes against a consuming
+project.
 
 ## Commands
 

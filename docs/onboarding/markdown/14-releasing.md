@@ -8,8 +8,8 @@ cost you an afternoon of testing the wrong code.
 ## Why there are versions at all
 
 docsbuild is not on PyPI — the Python Package Index, the public repository that `pip install`
-and `uv tool install` read from by default. It lives in a **private** git repository, which
-means there is no version number for anyone to look up and no "latest release" page.
+and `uv tool install` read from by default. It lives in a git repository instead, which means
+there is no version number for anyone to look up and no "latest release" page.
 
 What a consuming project pins instead is a **git tag**: a permanent, human-readable name for
 one specific commit. So the tag *is* the release. If no tag existed, a project could only
@@ -73,7 +73,7 @@ Two patterns, and the difference between them is not stylistic.
 ### As a standalone tool
 
 ```bash
-uv tool install git+ssh://git@github.com/douglaslwatts/docsbuild@v0.1.0
+uv tool install git+https://github.com/douglaslwatts/docsbuild@v0.1.1
 ```
 
 `uv tool install` puts a command on your `PATH` in its own isolated environment. docsbuild's
@@ -89,7 +89,7 @@ Pinned in the consuming project's `pyproject.toml`:
 dev = ["docsbuild"]
 
 [tool.uv.sources]
-docsbuild = { git = "ssh://git@github.com/douglaslwatts/docsbuild.git", tag = "v0.1.0" }
+docsbuild = { git = "https://github.com/douglaslwatts/docsbuild.git", tag = "v0.1.1" }
 ```
 
 Now `uv sync` installs it alongside the project's other dev tools, so anyone who can run the
@@ -101,18 +101,25 @@ in that project's environment. If that matters to you, use the standalone instal
 A **lockfile** (`uv.lock`) records the exact commit the tag resolved to, so the build stays
 reproducible even though a tag is, in principle, a movable label.
 
-### Access, because the repository is private
+### Access, because the repository is public
 
-Either pattern needs credentials at install time:
+Neither pattern needs credentials. The repository is public, so an `https://` clone works
+everywhere without setup — your machine, a colleague's, a second laptop, or continuous
+integration (a service that builds and tests a project automatically on every push). There are
+no keys to distribute and nothing to configure.
 
-- **Locally** — an SSH key on the GitHub account, offered by a running SSH agent. Running
-  `gh auth login` also configures a credential helper, which covers `https://` URLs.
-- **Anywhere else** (a second machine, continuous integration) — a deploy key or an access
-  token, since neither has your agent or your keys.
+SSH is still the right remote for *pushing*, since that does have to prove who you are:
 
-Without access the consumer's `uv sync` fails **for the whole project**, tests included — not
-just the docs build. The symptom is a git authentication error, so it reads as a credentials
-problem rather than a missing package, which is at least honest.
+```bash
+git remote set-url origin git@github.com:douglaslwatts/docsbuild.git
+```
+
+That is a maintainer's concern, though. It never reaches consumers, who only ever read.
+
+What can still fail is the **tag**. If it is missing from the remote — nearly always because it
+was created locally and never pushed — the consumer's `uv sync` fails **for the whole project**,
+tests included, not just the docs build. The error names the revision it could not find rather
+than the package, so it points at the real cause.
 
 ## The trap: editing docsbuild while a project depends on it
 

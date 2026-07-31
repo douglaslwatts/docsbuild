@@ -28,11 +28,10 @@ and rendered without adopting a toolchain.
 ## Quick start
 
 **docsbuild is not on PyPI.** It is installed from its git repository, pinned to a release
-tag — and that repository is **private**, so this needs credentials (an SSH agent locally, or
-`gh auth login`, which also sets up an HTTPS credential helper):
+tag. The repository is public, so this needs no credentials:
 
 ```bash
-uv tool install git+ssh://git@github.com/douglaslwatts/docsbuild@v0.1.0   # or: pipx install
+uv tool install git+https://github.com/douglaslwatts/docsbuild@v0.1.1   # or: pipx install
 ```
 
 Pin the tag rather than omitting it: without one you track whatever `main` happens to be, which
@@ -398,9 +397,8 @@ and the tag — pushing a branch does not push tags, and until the tag is on the
 consumer can resolve it.
 
 A project can consume a release either as a standalone tool (above) or as a development
-dependency pinned in `[tool.uv.sources]`. The full workflow — including private-repo access and
-the reason `uv run --no-sync` is mandatory when testing local changes against a consuming
-project — is in
+dependency pinned in `[tool.uv.sources]`. The full workflow — including the reason
+`uv run --no-sync` is mandatory when testing local changes against a consuming project — is in
 **[Releasing a version](docs/onboarding/markdown/14-releasing.md)**.
 
 ## Licence
