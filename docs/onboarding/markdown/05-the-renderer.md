@@ -47,26 +47,52 @@ You write links pointing at markdown files:
 See [configuration](11-configuration.md).
 ```
 
-That link works when someone reads the source on GitHub. The `link_open` rule rewrites the
-extension so it also works in the built site.
+That link works when someone reads the source on GitHub. The `link_open` rule, through
+`_rewrite_href`, points it at the built page instead, so it also works in the built site.
+A `#section` after the file name is kept: `02-status.md#open-questions` becomes
+`02-status.html#open-questions`.
 
-The same rule handles **cross-set links** — a link from one doc set into another, written
-through the other set's source directory:
+**Only links to real pages become `.html`.** Before a build, `main` collects every page
+the project builds — the pages of every doc set listed in `sites.toml`, and every
+standalone page — into a map from each source `.md` file to the `.html` it becomes
+(`site_pages`). It collects the whole project even when `--set` builds just one set,
+because a link may lead into any of them. Each page is rendered with a `LinkTargets`: that
+map, plus the directory the page is read from and the directory its HTML is written to.
+For each relative link ending in `.md`, `LinkTargets.href` resolves the file it names:
 
-```
-../../plan/markdown/01-goal.md   →   ../../plan/html/01-goal.html
-```
+- **A page** — in this set, another set, or a standalone page — gets a relative link to
+  its `.html`. This is how **cross-set links** work, a link from one doc set into another:
 
-It does this by replacing `/{source}/` with `/{output}/`, using the *current* set's
-directory names. That is a real limitation worth knowing: if two sets in one project use
-different directory names, links between them need writing by hand. The converter is only
-given one set's configuration, so it has no way to know the other's.
+  ```
+  ../../plan/markdown/01-goal.md   →   ../../plan/html/01-goal.html
+  ```
+
+  Because the target is looked up rather than guessed, the two sets may use different
+  directory names.
+- **Anything else** — a `README.md` beside the docs, a vendored note — is not a page. The
+  link keeps pointing at that `.md` file, rebased so it resolves from the output
+  directory. Rewriting it to `.html` would point at a file that is never built.
+
+One case falls back to a naming convention. `--config` builds a single `site.toml` with
+no index, so only that set's pages are known. A link through another set's source
+directory (`/markdown/` by default) that is not a known page is then assumed to be one:
+`.md` becomes `.html` and `/{source}/` becomes `/{output}/`, using the *current* set's
+directory names. `md_to_html` called on its own, with no `LinkTargets`, uses the same
+convention for every `.md` link.
+
+Links with a scheme (`https://…/README.md`), site-absolute paths and bare `#anchors` are
+never changed.
 
 ### 2. Headings: anchor ids
 
-The `heading_open` rule adds an `id` to `<h2>` and `<h3>` elements, using `slug` to turn
-the heading text into a URL-safe string. "Where it stands" becomes
-`id="where-it-stands"`.
+The `heading_open` rule adds an `id` to `<h2>` and `<h3>` elements, using `anchor` to
+turn the heading text into the same anchor GitHub gives it: lower case, punctuation
+dropped, each space a hyphen. "Where it stands" becomes `id="where-it-stands"`, and
+"Notes, lists & to-dos" becomes `id="notes-lists--to-dos"` — the `&` goes, both spaces
+around it stay, hence the double hyphen. Matching GitHub is the point: a `page.md#section`
+link written and checked on GitHub lands on the same heading in the built site. Before
+v0.1.2 the ids came from a different function, `slug`, which collapsed such runs into one
+hyphen, so a link like that silently missed.
 
 These exist so an in-page contents panel can link to sections — used by [standalone
 pages](10-extras.md) — and so you can link to a section from elsewhere. Only `h2` and `h3`

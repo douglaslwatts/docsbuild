@@ -25,9 +25,11 @@ place. Handing a complete specification to a tool — a language model, a search
 ### Two things it rewrites
 
 **Links between pages become in-document anchors.** A link to `02-status.md` becomes
-`#where-it-stands`, using the target page's own first heading. So the concatenated file
-reads as one document with working internal navigation, rather than a stack of pages with
-links pointing at files that are not there.
+`#where-it-stands`, using the target page's own first heading. A link to a section,
+`02-status.md#open-questions`, becomes that section's own anchor, `#open-questions`, since
+every section is in the one file too. So the concatenated file reads as one document with
+working internal navigation, rather than a stack of pages with links pointing at files
+that are not there.
 
 The match is against the **real page list**, not a filename pattern. An earlier version
 guessed with a regular expression matching `index` or `NN-slug`, which silently missed a

@@ -98,14 +98,15 @@ Note that even a flat set writes its output into a subdirectory. `output` still 
 to `html`, so your markdown and your HTML never end up mixed together unless you
 explicitly ask for that.
 
-The flat layout has one behavioural difference, and it is not obvious. Cross-set links —
-links written through another set's source directory — get repointed at that set's output
-directory during a build. To do that the renderer is told the current set's `source` and
-`output` names. For a flat set, `source` *is* the set's own directory, so its name is not
-a safe marker: a set called `notes` would rewrite any link containing `/notes/`, including
-one pointing at something entirely unrelated. So **cross-set link rewriting is switched
-off for flat sets**, which loses nothing, since a flat set has no source subdirectory for
-such a link to route through. The function is `_link_dirs`.
+The flat layout has one behavioural difference, and it is not obvious. Links to pages
+are resolved against the project's real page list (see [the renderer](05-the-renderer.md)),
+but when that list is incomplete — a `--config` build of one set — a link through another
+set's source directory falls back to a naming convention: `/{source}/` is replaced with
+`/{output}/`. For a flat set, `source` *is* the set's own directory, so its name is not a
+safe marker: a set called `notes` would rewrite any link containing `/notes/`, including
+one pointing at something entirely unrelated. So **that fallback is switched off for flat
+sets**, which loses nothing, since a flat set has no source subdirectory for such a link
+to route through. The function is `_link_dirs`.
 
 ## When you need `sites.toml`, and when you don't
 

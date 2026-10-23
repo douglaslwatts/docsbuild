@@ -57,6 +57,30 @@ Hence the [exclusions](08-finding-the-project.md).
 **The badge rule stole badges from nested items,** applying the styling class to one
 element and the pill to another. Found by chasing test coverage, not by looking at pages.
 
+## v0.1.2: links that pointed nowhere
+
+Two link bugs, found by the first project to build a guide and a plan that link to each
+other and to files outside the docs. Both produced a page that built cleanly and a link
+that went nowhere — the confident-wrong-answer failure mode again.
+
+**A link to a section kept its `.md`.** `link_open` tested `href.endswith(".md")`, which
+is false for `02-status.md#open-questions`, so the link still named the markdown file. The
+concatenation had the same blind spot one function over: it looked the whole
+`page#section` string up in the page list, missed, and rebased it as a file path. Both now
+split the fragment off first, with one helper, `_split_fragment`. Fixing it exposed a
+third mismatch: heading ids came from `slug`, which differs from GitHub's anchors whenever
+punctuation sits between spaces, so even a correctly rewritten section link could miss.
+Ids now come from `anchor`, which matches GitHub. **Some ids changed in v0.1.2** — any
+heading with punctuation between spaces — so a hand-written link to one of those may need
+its fragment updated.
+
+**Every `.md` link became `.html`, page or not.** A link to a repository's `README.md`
+became `README.html`, which no build writes. The renderer had no idea which files were
+pages; it was only given the current set's directory names. Now `main` collects every page
+in the project first (`site_pages`), and each page is rendered with that list
+(`LinkTargets`), so only real pages are rewritten and anything else keeps pointing at its
+file.
+
 ## The hand-written converter, and why it went
 
 For most of its life this tool converted markdown itself — about 225 lines, a line-scanner

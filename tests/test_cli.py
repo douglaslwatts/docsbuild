@@ -379,8 +379,8 @@ def test_a_flat_set_does_not_rewrite_links_containing_its_own_name(
 
     With source = ".", naively passing the directory name as the source-dir marker would
     rewrite any link containing that word — including one pointing somewhere unrelated.
-    A flat set has no source subdirectory for a cross-set link to route through, so
-    there is nothing to rewrite.
+    A flat set has no source subdirectory for a cross-set link to route through, so the
+    link is treated as what it is: a file that is not a page, linked from ``html/``.
     """
     project = tmp_path / "onboarding"
     project.mkdir()
@@ -392,7 +392,7 @@ def test_a_flat_set_does_not_rewrite_links_containing_its_own_name(
     db.main(["--config", str(project / "site.toml")])
 
     html = (project / "html" / "index.html").read_text()
-    assert 'href="../vendor/onboarding/notes.html"' in html
+    assert 'href="../../vendor/onboarding/notes.md"' in html
     assert "/html/notes" not in html
 
 

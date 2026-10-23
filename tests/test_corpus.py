@@ -90,7 +90,7 @@ def test_every_markdown_link_became_html(page: tuple[Path, str]) -> None:
     """Links are authored as `.md` so they work on GitHub; the build rewrites them."""
     _, html = page
 
-    assert not re.search(r'href="[^"]*\.md"', html)
+    assert not re.search(r'href="[^"]*\.md[#"]', html)
 
 
 # ------------------------------------------------------------------- well-formedness

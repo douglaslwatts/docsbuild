@@ -1,6 +1,6 @@
 [project]
 name = "docsbuild"
-version = "0.1.1"
+version = "0.1.2"
 description = "Build markdown doc sets into self-contained HTML sites. CommonMark via markdown-it-py."
 readme = "README.md"
 requires-python = ">=3.11"

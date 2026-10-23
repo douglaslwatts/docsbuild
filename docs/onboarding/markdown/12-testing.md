@@ -6,7 +6,7 @@ documents through the renderer and checks properties that must hold for all of t
 page explains why both exist, what each catches, and — importantly — what neither catches.
 
 ```bash
-uv run pytest          # 423 tests, 100% coverage, gate at 95%
+uv run pytest          # 436 tests, 100% coverage, gate at 95%
 uv run ruff check . && uv run ruff format --check .
 uv run pyright
 ```
@@ -15,7 +15,7 @@ uv run pyright
 
 | | Unit tests | Corpus harness |
 |---|---|---|
-| Files | `test_docsbuild.py`, `test_init.py`, `test_build.py`, `test_cli.py` | `test_corpus.py` |
+| Files | `test_docsbuild.py`, `test_init.py`, `test_build.py`, `test_cli.py`, `test_links.py` | `test_corpus.py` |
 | Input | small, hand-written | 40 real documents, ~200 KB |
 | Asserts | specific behaviour | invariants across every page |
 | Catches | "this feature is wrong" | "something is wrong *somewhere*" |
@@ -52,7 +52,7 @@ without any thought for this tool — through the renderer, and asserts invarian
 - no literal `**` outside code spans (leaked bold markers)
 - no unrendered `](` (a link form the converter did not understand)
 - no stray `!` before an `<a>` (an image rendered as a link)
-- every `.md` link rewritten to `.html`
+- every `.md` link rewritten to `.html`, a `#section` after it included
 - output is **well-formed** — tags nest and close, checked with the standard library's
   `html.parser`
 - one heading element per heading line in the source
