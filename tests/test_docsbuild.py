@@ -409,13 +409,6 @@ def test_two_space_hard_breaks_work(db: ModuleType) -> None:
     assert "<br>" in out
 
 
-# ----------------------------------------------------------------------------- slug
-
-
-def test_slug_strips_formatting_characters(db: ModuleType) -> None:
-    assert db.slug("`code` and **bold** Heading") == "code-and-bold-heading"
-
-
 # ----------------------------------------------------------------------- prune_stale
 
 

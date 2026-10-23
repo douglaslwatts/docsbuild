@@ -31,7 +31,7 @@ and rendered without adopting a toolchain.
 tag. The repository is public, so this needs no credentials:
 
 ```bash
-uv tool install git+https://github.com/douglaslwatts/docsbuild@v0.1.1   # or: pipx install
+uv tool install git+https://github.com/douglaslwatts/docsbuild@v0.1.2   # or: pipx install
 ```
 
 Pin the tag rather than omitting it: without one you track whatever `main` happens to be, which
@@ -234,8 +234,9 @@ docs/onboarding/markdown/*.md     # nested — the default, source = "markdown"
 docs/onboarding/*.md              # flat   — source = "."
 ```
 
-Both are supported. A flat set does no cross-set link rewriting, since it has no source
-subdirectory for such a link to route through.
+Both are supported. Links to pages resolve the same way in either layout; a flat set just
+skips the `--config` fallback for links into sets the build was not told about, since it
+has no source subdirectory for such a link to route through.
 
 ## Command line
 
@@ -284,12 +285,14 @@ Two behaviours are this tool's own:
 
 | You write | You get |
 |---|---|
-| `[label](page.md)` | A link, rewritten to `page.html` on the way out |
+| `[label](page.md)` | A link, rewritten to `page.html` on the way out when `page.md` is a page the project builds |
 | `[DONE] …` starting a list item | A coloured status badge, if you declared `DONE` |
 
 Write links as `.md` so they also work when someone reads the source on GitHub; the
-builder rewrites the extension. A link through a sibling set's source directory —
-`../../plan/markdown/x.md` — is repointed at that set's output directory.
+builder points each one at the built page. A `#section` is kept, and heading ids match
+GitHub's, so `page.md#section` lands on the same heading in both. A link into a sibling
+set — `../../plan/markdown/x.md` — is pointed at that set's built page. A link to markdown
+that is not a page, such as a `README.md` outside the docs, keeps pointing at that file.
 
 ### Status badges
 
@@ -372,7 +375,7 @@ the right trade.
 
 ```bash
 uv sync
-uv run pytest          # 423 tests, 100% coverage, gate at 95%
+uv run pytest          # 436 tests, 100% coverage, gate at 95%
 uv run ruff check . && uv run ruff format --check .
 uv run pyright
 ```

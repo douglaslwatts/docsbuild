@@ -68,21 +68,22 @@ Never write implementation code before there is a failing test for it.
 ## Test coverage (MANDATORY)
 
 - **≥95% is a hard requirement, kept as close to 100% as reasonably possible.** It currently
-  sits at **100% across 423 tests.**
+  sits at **100% across 436 tests.**
 - Enforced mechanically: `pytest` runs with `--cov-fail-under=95`, so the suite *fails* below
   the threshold.
 - New code lands together with its tests.
 
 ## Two test strategies, both deliberate
 
-- **Unit tests** (`tests/test_docsbuild.py`, `test_init.py`, `test_build.py`, `test_cli.py`) —
-  small hand-written inputs asserting specific behavior. They assert **semantics, not exact
-  HTML**: "a `<ul>` with two `<li>`", not a byte string. Exact-HTML assertions all had to be
-  rewritten when the renderer was swapped; property assertions survived.
+- **Unit tests** (`tests/test_docsbuild.py`, `test_init.py`, `test_build.py`, `test_cli.py`,
+  `test_links.py`) — small hand-written inputs asserting specific behavior. They assert
+  **semantics, not exact HTML**: "a `<ul>` with two `<li>`", not a byte string. Exact-HTML
+  assertions all had to be rewritten when the renderer was swapped; property assertions
+  survived.
 - **The corpus harness** (`tests/test_corpus.py`) — 40 real documents, ~200 KB, asserting
-  **invariants**: no leaked `**`, no unrendered `](`, every `.md` link became `.html`, output
-  parses as well-formed markup. This is what makes a renderer swap verifiable, and it must stay
-  implementation-agnostic.
+  **invariants**: no leaked `**`, no unrendered `](`, every `.md` link (with or without a
+  `#section`) became `.html`, output parses as well-formed markup. This is what makes a
+  renderer swap verifiable, and it must stay implementation-agnostic.
 
 ## Code quality
 

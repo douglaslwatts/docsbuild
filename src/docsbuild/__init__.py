@@ -31,8 +31,9 @@ neither belongs here.
 Two conventions of this tool's own sit on top, both in ``_renderer``:
 
 * Links written as ``*.md`` (so the sources also read on GitHub) are rewritten to
-  ``*.html`` for the built site, and a link through a sibling set's source directory is
-  repointed at that set's output directory.
+  ``*.html`` for the built site when they point at a page the project builds, keeping
+  any ``#section``. A link to markdown that is not a page, such as a README beside the
+  docs, keeps pointing at that file.
 * A **status badge** at the very start of a list item renders as a coloured pill — the
   way a document marks finished work *without deleting it*. Tokens are declared per doc
   set in ``[badges]``; with none declared, every bracketed word stays literal text.
@@ -81,12 +82,6 @@ THEME_SCRIPT = (
 
 def esc(text: str) -> str:
     return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-
-
-def slug(text: str) -> str:
-    """A URL anchor for a heading, with formatting characters stripped."""
-    text = re.sub(r"`([^`]+)`", r"\1", text).replace("*", "")
-    return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
 
 
 def _badge_styles(raw: object) -> dict[str, tuple[str, str]]:
@@ -164,9 +159,70 @@ def _badge_rule(badges: Mapping[str, tuple[str, str]]) -> Any:
     return rule
 
 
+@dataclass(frozen=True)
+class LinkTargets:
+    """Where one page's links can lead, for a real build.
+
+    ``pages`` maps the source ``.md`` of every page the project builds — in any doc set,
+    standalone pages included — to the ``.html`` it becomes. ``source_dir`` is the
+    directory the page being rendered is read from, which its relative links are
+    written against; ``output_dir`` is where its HTML is written, which they must be
+    rewritten against. All paths are absolute and resolved.
+    """
+
+    pages: Mapping[Path, Path]
+    source_dir: Path
+    output_dir: Path
+
+    def href(self, path: str, sibling_marker: str) -> str | None:
+        """The link to the file a relative ``.md`` path names, from the built page.
+
+        A page links to its ``.html``. A path through another set's source directory
+        (``sibling_marker``, e.g. ``/markdown/``) that is not a known page belongs to a
+        set this build was not told about, as with ``--config``, so ``None`` hands it
+        back to the naming convention. Anything else is not a page: it still links to
+        the file itself, rebased onto the output directory so it resolves from there.
+        """
+        target = (self.source_dir / path).resolve()
+        if target in self.pages:
+            target = self.pages[target]
+        elif sibling_marker in path:
+            return None
+        return Path(os.path.relpath(target, self.output_dir)).as_posix()
+
+
+def _split_fragment(href: str) -> tuple[str, str]:
+    """``page.md#section`` → ``("page.md", "#section")``; no fragment gives ``""``."""
+    path, hash_mark, fragment = href.partition("#")
+    return path, hash_mark + fragment
+
+
+def _rewrite_href(href: str, link_dirs: LinkDirs, targets: LinkTargets | None) -> str:
+    """Point one link at the built site. See ``LinkTargets`` and ``_renderer``.
+
+    A relative link to a ``.md`` file is authored that way so the source also reads on
+    GitHub. With ``targets`` (a real build) it is resolved against the project's actual
+    pages. Without them, or for a sibling set's page the build does not know, it is
+    assumed to be a page and becomes ``.html``, with a link through a sibling set's
+    source directory repointed at that set's output.
+    """
+    path, fragment = _split_fragment(href)
+    source_dir, output_dir = link_dirs
+    if path.endswith(".md") and not _NOT_RELATIVE.match(path):
+        if targets is not None:
+            resolved = targets.href(path, f"/{source_dir}/")
+            if resolved is not None:
+                return resolved + fragment
+        path = path[:-3] + ".html"
+    if source_dir != output_dir:
+        path = path.replace(f"/{source_dir}/", f"/{output_dir}/")
+    return path + fragment
+
+
 def _renderer(
     link_dirs: LinkDirs = DEFAULT_LINK_DIRS,
     badges: Mapping[str, tuple[str, str]] | None = None,
+    targets: LinkTargets | None = None,
 ) -> MarkdownIt:
     """A configured CommonMark renderer.
 
@@ -193,26 +249,18 @@ def _renderer(
             fmt="html",
         )
 
-    source_dir, output_dir = link_dirs
-
     def link_open(self: Any, tokens: Any, idx: int, options: Any, env: Any) -> str:
         href = tokens[idx].attrGet("href")
         if href:
-            # Authored as `.md` so the source also reads on GitHub; the built site needs
-            # `.html`. A link through a sibling set's source directory has to be pointed
-            # at that set's output directory instead.
-            if href.endswith(".md"):
-                href = href[:-3] + ".html"
-            if source_dir != output_dir:
-                href = href.replace(f"/{source_dir}/", f"/{output_dir}/")
-            tokens[idx].attrSet("href", href)
+            tokens[idx].attrSet("href", _rewrite_href(href, link_dirs, targets))
         return self.renderToken(tokens, idx, options, env)
 
     def heading_open(self: Any, tokens: Any, idx: int, options: Any, env: Any) -> str:
         # h2/h3 only: deep enough for an in-page contents panel, shallow enough that the
-        # ids stay meaningful.
+        # ids stay meaningful. GitHub-style, so a `page.md#section` written to work on
+        # GitHub lands on the same heading here.
         if tokens[idx].tag in ("h2", "h3"):
-            tokens[idx].attrSet("id", slug(tokens[idx + 1].content))
+            tokens[idx].attrSet("id", anchor(tokens[idx + 1].content))
         return self.renderToken(tokens, idx, options, env)
 
     md.add_render_rule("link_open", link_open, fmt="html")
@@ -234,20 +282,22 @@ def md_to_html(
     md: str,
     link_dirs: LinkDirs = DEFAULT_LINK_DIRS,
     badges: Mapping[str, tuple[str, str]] | None = None,
+    targets: LinkTargets | None = None,
 ) -> str:
     """Convert markdown to an HTML fragment.
 
     ``link_dirs`` is the set's ``(source, output)`` directory names, used to repoint
-    cross-set links. ``badges`` maps a ``[TOKEN]`` at the start of a list item to a
-    pill; absent, no token is special and every bracketed word stays literal text.
+    cross-set links when no ``targets`` are given. ``badges`` maps a ``[TOKEN]`` at the
+    start of a list item to a pill; absent, no token is special and every bracketed word
+    stays literal text. ``targets`` are the project's real pages; see ``LinkTargets``.
     """
-    return _renderer(link_dirs, badges).render(md).strip()
+    return _renderer(link_dirs, badges, targets).render(md).strip()
 
 
 def h2_headings(md: str) -> list[tuple[str, str]]:
     """The page's ``##`` headings as ``(anchor, text)``, for in-page contents panels."""
     return [
-        (slug(m.group(1)), m.group(1))
+        (anchor(m.group(1)), m.group(1))
         for line in md.split("\n")
         if (m := re.match(r"##\s+(.*)", line))
     ]
@@ -330,6 +380,7 @@ def standalone_page(
     style: str,
     link_dirs: LinkDirs = DEFAULT_LINK_DIRS,
     badges: Mapping[str, tuple[str, str]] | None = None,
+    targets: LinkTargets | None = None,
 ) -> str:
     """A self-contained page outside any reading chain, with an in-page section TOC."""
     items = "".join(
@@ -340,7 +391,7 @@ def standalone_page(
         f'<nav class="toc"><a class="brand" href="{brand_href}">{esc(brand)}</a>'
         f"<h2>On this page</h2><ol>{items}</ol></nav>"
     )
-    body = f"<article>{md_to_html(md, link_dirs, badges)}</article>"
+    body = f"<article>{md_to_html(md, link_dirs, badges, targets)}</article>"
     return _shell(title, style, sidebar, body)
 
 
@@ -482,9 +533,11 @@ def concat_links(
 
     def rewrite(match: re.Match[str]) -> str:
         href = match.group(1)
-        stem = href[:-3] if href.endswith(".md") else None
+        path, fragment = _split_fragment(href)
+        stem = path[:-3] if path.endswith(".md") else None
         if stem is not None and stem in slugs:
-            return f"](#{anchors.get(stem, stem)})"
+            # Every page is inlined, so a section link jumps to that section's anchor.
+            return f"](#{fragment[1:] or anchors.get(stem, stem)})"
         if _NOT_RELATIVE.match(href):
             return match.group(0)
         return f"]({posixpath.normpath(posixpath.join(prefix, href))})"
@@ -570,12 +623,33 @@ def _link_dirs(site: SiteConfig) -> LinkDirs:
     return (site.source.name, site.output.name)
 
 
-def build_site(site: SiteConfig) -> None:
-    """Render one doc set: its pages, its standalone pages, and its concatenation."""
+def site_pages(site: SiteConfig) -> dict[Path, Path]:
+    """Every page one doc set builds, standalone pages included: source → output."""
+    found = {
+        (site.source / f"{slug}.md").resolve(): (site.output / f"{slug}.html").resolve()
+        for slug, _ in discover_pages(site.source)
+    }
+    for spec in site.standalone:
+        found[(site.base / spec["source"]).resolve()] = (
+            site.base / spec["output"]
+        ).resolve()
+    return found
+
+
+def build_site(
+    site: SiteConfig, project_pages: Mapping[Path, Path] | None = None
+) -> None:
+    """Render one doc set: its pages, its standalone pages, and its concatenation.
+
+    ``project_pages`` is every page in the project (see ``site_pages``), so links into
+    other doc sets resolve. Without it, only this set's own pages are known.
+    """
     pages = discover_pages(site.source, site.titles, site.order)
     sources = read_sources(site.source, pages)
     style = site.style.read_text()
     link_dirs = _link_dirs(site)
+    known = site_pages(site) if project_pages is None else project_pages
+    targets = LinkTargets(known, site.source.resolve(), site.output.resolve())
     # Render every page *before* touching the directory, so a failure part-way through
     # can never leave the docs deleted and not replaced.
     rendered = {
@@ -584,7 +658,7 @@ def build_site(site: SiteConfig) -> None:
             index,
             slug,
             title,
-            md_to_html(sources[slug], link_dirs, site.badges),
+            md_to_html(sources[slug], link_dirs, site.badges, targets),
             style,
             site.brand,
             site.title_suffix,
@@ -608,6 +682,7 @@ def build_site(site: SiteConfig) -> None:
                 style,
                 link_dirs,
                 site.badges,
+                LinkTargets(known, source.parent.resolve(), out.parent.resolve()),
             )
         )
         print(f"Built standalone page {out}")
@@ -1158,14 +1233,19 @@ def main(argv: Sequence[str] | None = None) -> None:
     args = parser.parse_args(argv)
 
     if args.config:
-        configs = [args.config]
+        configs = project = [args.config]
     else:
         # An explicit --root is taken at its word rather than searched upward from,
         # but may still name a repo root whose docs live in a `docs/` subdirectory.
         root = find_docs_root(args.root) if args.root else find_root(Path.cwd())
         configs = site_configs(root, args.only)
+        # Even when building one set, a link may lead into any of them.
+        project = site_configs(root)
+    project_pages: dict[Path, Path] = {}
+    for path in project:
+        project_pages.update(site_pages(load_site(path)))
     for path in configs:
-        build_site(load_site(path))
+        build_site(load_site(path), project_pages)
 
 
 if __name__ == "__main__":  # pragma: no cover

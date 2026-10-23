@@ -73,7 +73,7 @@ Two patterns, and the difference between them is not stylistic.
 ### As a standalone tool
 
 ```bash
-uv tool install git+https://github.com/douglaslwatts/docsbuild@v0.1.1
+uv tool install git+https://github.com/douglaslwatts/docsbuild@v0.1.2
 ```
 
 `uv tool install` puts a command on your `PATH` in its own isolated environment. docsbuild's
@@ -89,7 +89,7 @@ Pinned in the consuming project's `pyproject.toml`:
 dev = ["docsbuild"]
 
 [tool.uv.sources]
-docsbuild = { git = "https://github.com/douglaslwatts/docsbuild.git", tag = "v0.1.1" }
+docsbuild = { git = "https://github.com/douglaslwatts/docsbuild.git", tag = "v0.1.2" }
 ```
 
 Now `uv sync` installs it alongside the project's other dev tools, so anyone who can run the
